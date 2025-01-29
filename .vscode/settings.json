@@ -1,0 +1,72 @@
+{
+  // Enable TypeScript features for Next.js
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+
+  // Formatting settings
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode", // Use Prettier as the default formatter
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "always", // Apply all fixable code actions
+    "source.organizeImports": "always" // Automatically organize imports
+  },
+
+  // ESLint integration
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.options": {
+    "overrideConfigFile": ".eslintrc.json"
+  },
+
+  // Path alias suggestions for Next.js (if using jsconfig or tsconfig paths)
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "javascript.preferences.importModuleSpecifier": "non-relative",
+
+  // Tailwind CSS IntelliSense (if applicable)
+  "tailwindCSS.includeLanguages": {
+    "javascript": "javascript",
+    "javascriptreact": "javascriptreact",
+    "typescript": "typescript",
+    "typescriptreact": "typescriptreact"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    "clsx\\(([^)]*)\\)", // For clsx utility
+    "classnames\\(([^)]*)\\)" // For classnames utility
+  ],
+
+  // Enable Emmet support for JSX/TSX
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact"
+  },
+
+  // Path IntelliSense
+  "path-intellisense.mappings": {
+    "@": "${workspaceFolder}/" // Adjust according to your alias
+  },
+
+  // Version Control
+  "git.ignoreLimitWarning": true,
+
+  // Terminal settings
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.windows": "Command Prompt",
+
+  // Prettier settings
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // Disable telemetry for privacy
+  "telemetry.telemetryLevel": "off"
+}
