@@ -1,0 +1,482 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  expires_at        Int?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  expires      DateTime
+  sessionToken String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  name          String?
+  password      String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now())
+  account       Account[]
+  session       Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Sekolah {
+  id               String   @id @default(cuid())
+  nama             String   @db.VarChar
+  npsn             String?  @db.Char(8)
+  status           String?  @db.VarChar
+  bentukPendidikan Int?     @map("bentuk_pendidikan")
+  alamat           String   @db.VarChar
+  kodePos          String?  @map("kode_pos") @db.VarChar
+  telp             String?  @db.VarChar
+  email            String?  @db.VarChar
+  website          String?  @db.VarChar
+  akreditasi       String?  @db.VarChar
+  kurikulum        String?  @db.VarChar
+  visi             String?  @db.VarChar
+  misi             String?  @db.VarChar
+  fasilitas        String[] @db.VarChar
+  logo             String?  @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  periode Periode[]
+
+  @@map("sekolah")
+}
+
+model Periode {
+  id             String   @id @default(cuid())
+  sekolahId      String
+  tahun          Int
+  tahunAjaran    String   @db.VarChar
+  nama           String   @db.VarChar // PPDB 2021/2022 Gelombang 1 / PPDB 2021/2022 Gelombang 2
+  tanggalMulai   DateTime @map("tanggal_mulai") @db.Date
+  tanggalSelesai DateTime @map("tanggal_selesai") @db.Date
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  sekolah                       Sekolah                         @relation(fields: [sekolahId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  jalurPendaftaran              JalurPendaftaran[]
+  syaratKetentuan               SyaratKetentuan[]
+  dokumenPersyaratanPendaftaran DokumenPersyaratanPendaftaran[]
+
+  @@map("periode")
+}
+
+model JalurPendaftaran {
+  id        String @id @default(cuid())
+  jalurId   String @map("jalur_pendaftaran_id")
+  periodeId String @map("periode_id")
+  kuota     Int
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  jalur                              Jalur                                @relation(fields: [jalurId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  periode                            Periode                              @relation(fields: [periodeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  biayaPendaftaran                   BiayaPendaftaran[]
+  jadwalPelaksanaan                  JadwalPelaksanaan[]
+  pendaftaran                        Pendaftaran[]
+  dokumenPersyaratanJalurPendaftaran DokumenPersyaratanJalurPendaftaran[]
+
+  @@map("jalur_pendaftaran")
+}
+
+model JadwalPelaksanaan {
+  id                 String    @id @default(cuid())
+  jalurPendaftaranId String    @map("jalur_pendaftaran_id")
+  nama               String    @db.VarChar
+  tanggalMulai       DateTime  @map("tanggal_mulai") @db.Date
+  tanggalSelesai     DateTime  @map("tanggal_selesai") @db.Date
+  lokasi             String    @db.VarChar
+  createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  jalurPendaftaran JalurPendaftaran @relation(fields: [jalurPendaftaranId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("jadwal_pelaksanaan")
+}
+
+model Jalur {
+  id        String  @id @default(cuid())
+  nama      String  @db.VarChar
+  deskripsi String? @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  jalurPendaftaran JalurPendaftaran[]
+
+  @@map("jalur")
+}
+
+model Pendaftaran {
+  id                 String   @id @default(cuid())
+  siswaId            String   @map("siswa_id")
+  jalurPendaftaranId String   @map("jalur_pendaftaran_periode_id")
+  tanggalDaftar      DateTime @map("tanggal_daftar") @db.Date
+  status             String   @db.VarChar
+  catatan            String?  @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  jalurPendaftaran        JalurPendaftaran          @relation(fields: [jalurPendaftaranId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  siswa                   Siswa                     @relation(fields: [siswaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  dokumenPendaftaran      DokumenPendaftaran[]
+  faktur                  Faktur[]
+  DokumenJalurPendaftaran DokumenJalurPendaftaran[]
+
+  @@map("pendaftaran")
+}
+
+model BiayaPendaftaran {
+  id                 String    @id @default(cuid())
+  jalurPendaftaranId String    @map("jalur_pendaftaran_periode_id")
+  nama               String    @db.VarChar
+  keterangan         String?   @db.VarChar
+  wajib              Boolean   @default(false)
+  jenis              String    @db.VarChar
+  nominal            Decimal   @db.Decimal
+  tanggalJatuhTempo  DateTime? @map("tanggal_jatuh_tempo") @db.Date
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  jalurPendaftaran JalurPendaftaran @relation(fields: [jalurPendaftaranId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  DetilFaktur      DetilFaktur[]
+
+  @@map("biaya_pendaftaran")
+}
+
+model Faktur {
+  id                String   @id @default(cuid())
+  pendaftaranId     String   @map("pendaftaran_id")
+  nomor             String   @db.VarChar
+  tanggalTerbit     DateTime @map("tanggal_terbit") @db.Date
+  tanggalJatuhTempo DateTime @map("tanggal_jatuh_tempo") @db.Date
+  nominal           Decimal  @db.Decimal
+  diskon            Decimal? @default(0) @db.Decimal
+  status            String   @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  pendaftaran                Pendaftaran                  @relation(fields: [pendaftaranId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  DetilFaktur                DetilFaktur[]
+  PembayaranBiayaPendaftaran PembayaranBiayaPendaftaran[]
+
+  @@map("faktur")
+}
+
+model DetilFaktur {
+  id       String  @id @default(cuid())
+  fakturId String  @map("faktur_id")
+  biayaId  String  @map("biaya_id")
+  nominal  Decimal @db.Decimal
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  faktur Faktur           @relation(fields: [fakturId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  biaya  BiayaPendaftaran @relation(fields: [biayaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("detil_faktur")
+}
+
+model PembayaranBiayaPendaftaran {
+  id       String   @id @default(cuid())
+  fakturId String   @map("faktur_id")
+  nominal  Decimal  @db.Decimal
+  tanggal  DateTime @db.Date
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  faktur Faktur @relation(fields: [fakturId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("pembayaran_biaya_pendaftaran")
+}
+
+model SyaratKetentuan {
+  id        String @id @default(cuid())
+  periodeId String @map("periode_id")
+  syarat    String @db.VarChar
+  ketentuan String @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  periode Periode @relation(fields: [periodeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("syarat_ketentuan")
+}
+
+model DokumenPersyaratanPendaftaran {
+  id                    String   @id @default(cuid())
+  periodeId             String   @map("periode_id")
+  jenisDokumenId        String   @db.VarChar
+  nama                  String   @db.VarChar
+  file                  String   @db.VarChar
+  diperlukan            Boolean  @default(false)
+  urutan                Int      @default(0)
+  tipeFileDiperbolehkan String[] @default([]) @map("tipe_file_diperbolehkan") @db.VarChar // ['pdf', 'jpg', 'jpeg', 'png']
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  jenisDokumen       JenisDokumen         @relation(fields: [jenisDokumenId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  periode            Periode              @relation(fields: [periodeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  dokumenPendaftaran DokumenPendaftaran[]
+
+  @@map("dokumen_persyaratan_pendaftaran")
+}
+
+model DokumenPersyaratanJalurPendaftaran {
+  id                    String   @id @default(cuid())
+  jalurPendaftaranId    String   @map("jalur_pendaftaran_periode_id")
+  jenisDokumenId        String   @db.VarChar
+  nama                  String   @db.VarChar
+  file                  String   @db.VarChar
+  diperlukan            Boolean  @default(false)
+  urutan                Int      @default(0)
+  tipeFileDiperbolehkan String[] @default([]) @map("tipe_file_diperbolehkan") @db.VarChar // ['pdf', 'jpg', 'jpeg', 'png']
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  jalurPendaftaran        JalurPendaftaran          @relation(fields: [jalurPendaftaranId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  jenisDokumen            JenisDokumen              @relation(fields: [jenisDokumenId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  DokumenJalurPendaftaran DokumenJalurPendaftaran[]
+
+  @@map("dokumen_persyaratan_jalur_pendaftaran")
+}
+
+model DokumenPendaftaran {
+  id            String @id @default(cuid())
+  pendaftaranId String @map("pendaftaran_id")
+  persyaratanId String @map("persyaratan_id")
+  jenis         String @db.VarChar
+  nama          String @db.VarChar
+  file          String @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  pendaftaran                  Pendaftaran                    @relation(fields: [pendaftaranId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  persyaratan                  DokumenPersyaratanPendaftaran  @relation(fields: [persyaratanId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  verifikasiDokumenPendaftaran VerifikasiDokumenPendaftaran[]
+
+  @@map("dokumen_pendaftaran")
+}
+
+model DokumenJalurPendaftaran {
+  id            String @id @default(cuid())
+  pendaftaranId String @map("pendaftaran_id")
+  persyaratanId String @map("persyaratan_id")
+  jenis         String @db.VarChar
+  nama          String @db.VarChar
+  file          String @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  pendaftaran                  Pendaftaran                         @relation(fields: [pendaftaranId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  persyaratan                  DokumenPersyaratanJalurPendaftaran  @relation(fields: [persyaratanId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  verifikasiDokumenPendaftaran VerifikasiDokumenJalurPendaftaran[]
+
+  @@map("dokumen_jalur_pendaftaran")
+}
+
+model JenisDokumen {
+  id        String @id @default(cuid())
+  nama      String @db.VarChar
+  deskripsi String @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  dokumenPersyaratanPendaftaran      DokumenPersyaratanPendaftaran[]
+  dokumenPersyaratanJalurPendaftaran DokumenPersyaratanJalurPendaftaran[]
+
+  @@map("jenis_dokumen")
+}
+
+model VerifikasiDokumenPendaftaran {
+  id                   String   @id @default(cuid())
+  dokumenPendaftaranId String   @map("dokumen_pendaftaran_id")
+  statusVerifikasi     String   @map("status_verifikasi") @db.VarChar
+  tanggalVerifikasi    DateTime @map("tanggal_verifikasi") @db.Date
+  diverifikasiOleh     String   @map("diverifikasi_oleh") @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  dokumenPendaftaran DokumenPendaftaran @relation(fields: [dokumenPendaftaranId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("verifikasi_dokumen_pendaftaran")
+}
+
+model VerifikasiDokumenJalurPendaftaran {
+  id                        String   @id @default(cuid())
+  dokumenJalurPendaftaranId String   @map("dokumen_jalur_pendaftaran_id")
+  statusVerifikasi          String   @map("status_verifikasi") @db.VarChar
+  tanggalVerifikasi         DateTime @map("tanggal_verifikasi") @db.Date
+  diverifikasiOleh          String   @map("diverifikasi_oleh") @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  dokumenJalurPendaftaran DokumenJalurPendaftaran @relation(fields: [dokumenJalurPendaftaranId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("verifikasi_dokumen_jalur_pendaftaran")
+}
+
+model Ortu {
+  id           String   @id @default(cuid())
+  nama         String   @db.VarChar
+  nik          String?  @db.Char(16)
+  kk           String?  @db.Char(16)
+  tahunLahir   Int?     @map("tahun_lahir")
+  tahunWafat   Int?     @map("tahun_wafat")
+  jenisKelamin String   @map("jenis_kelamin")
+  pendidikan   String?  @db.VarChar
+  pekerjaan    String?  @db.VarChar
+  penghasilan  Decimal? @db.Decimal
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  ayahSiswa Siswa[] @relation("ayah_siswa")
+  ibuSiswa  Siswa[] @relation("ibu_siswa")
+  waliSiswa Siswa[] @relation("wali_siswa")
+
+  @@map("ortu")
+}
+
+model Siswa {
+  id                    String   @id @default(cuid())
+  nama                  String   @db.VarChar
+  KK                    String?  @db.Char(16)
+  NIK                   String?  @unique @db.Char(16)
+  NISN                  String?  @db.Char(10)
+  tempatLahir           String   @map("tempat_lahir") @db.VarChar
+  tanggalLahir          DateTime @map("tanggal_lahir") @db.Date
+  jenisKelamin          String   @map("jenis_kelamin")
+  agama                 String   @db.VarChar
+  golonganDarah         String?  @map("golongan_darah") @db.VarChar
+  alamat                String   @db.VarChar
+  //tahun_masuk              Int
+  //pindahan                 Boolean       @default(false)
+  sekolahAsal           Json?    @map("sekolah_asal") // percobaan json
+  ayahId                String?  @map("ayah_id")
+  ibuId                 String?  @map("ibu_id")
+  waliId                String?  @map("wali_id")
+  // ayah                  Json? // percobaan json
+  // ibu                   Json? // percobaan json
+  kontakDaruratNama     String?  @map("kontak_darurat_nama") @db.VarChar
+  kontakDaruratHubungan String?  @map("kontak_darurat_hubungan") @db.VarChar
+  kontakDaruratTelepon  String?  @map("kontak_darurat_telepon") @db.VarChar
+
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  ayah        Ortu?         @relation("ayah_siswa", fields: [ayahId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ibu         Ortu?         @relation("ibu_siswa", fields: [ibuId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  wali        Ortu?         @relation("wali_siswa", fields: [waliId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  Pendaftaran Pendaftaran[]
+
+  @@map("siswa")
+}
+
+model Provinsi {
+  id            String          @id
+  nama          String          @db.VarChar
+  kotaKabupaten KotaKabupaten[]
+
+  @@map("provinsi")
+}
+
+model KotaKabupaten {
+  id         String @id
+  provinsiId String @map("provinsi_id")
+  nama       String @db.VarChar
+
+  provinsi  Provinsi    @relation(fields: [provinsiId], references: [id])
+  kecamatan Kecamatan[]
+
+  @@map("kota_kabupaten")
+}
+
+model Kecamatan {
+  id              String @id
+  kotaKabupatenId String @map("kota_kabupaten_id")
+  nama            String @db.VarChar
+
+  kotaKabupaten KotaKabupaten   @relation(fields: [kotaKabupatenId], references: [id])
+  desaKelurahan DesaKelurahan[]
+
+  @@map("kecamatan")
+}
+
+model DesaKelurahan {
+  id          String @id
+  kecamatanId String @map("kecamatan_id")
+  nama        String @db.VarChar
+
+  kecamatan Kecamatan @relation(fields: [kecamatanId], references: [id])
+
+  @@map("desa_kelurahan")
+}
+
+model RentangPenghasilan {
+  id       String  @id
+  rentang  String  @db.VarChar
+  minimal  Decimal @db.Decimal
+  maksimal Decimal @db.Decimal
+
+  @@map("rentang_pendapatan")
+}

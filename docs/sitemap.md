@@ -1,5 +1,6 @@
 # Sitempa
 
+/
 /beranda
 /aturan
 /jadwal

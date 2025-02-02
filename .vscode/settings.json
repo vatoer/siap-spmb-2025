@@ -68,5 +68,8 @@
   },
 
   // Disable telemetry for privacy
-  "telemetry.telemetryLevel": "off"
+  "telemetry.telemetryLevel": "off",
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  }
 }
